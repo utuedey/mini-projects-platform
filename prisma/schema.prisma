@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  FREELANCER
+  ADMIN
+}
+
+enum ProjectStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+model User {
+  id              String @id @default(uuid())
+  name            String
+  email           String
+  passwordHash    String
+  role            Role
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  projects        Project[]
+  applications    Application[]
+}
+
+model Project {
+  id            String @id @default(uuid())
+  clientId      String
+  client        User @relation(fields: [clientId], references: [id])
+  title         String
+  description   String?
+  budgetMin     Float
+  budgetMax     Float
+  status        ProjectStatus @default(DRAFT)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  applications  Application[]
+
+  @@index([clientId])
+  @@map("projects")
+}
+
+model Application {
+  id              String @id @default(uuid())
+  projectId       String
+  project         Project @relation(fields: [projectId], references: [id])
+  freelancerId    String
+  freelancer      User @relation(fields: [freelancerId], references: [id])
+  coverLetter     String
+  bidAmount       Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([projectId, freelancerId])
+  @@index([projectId])
+  @@index([freelancerId])
+  @@map("applications")
+}

@@ -1,0 +1,39 @@
+{
+  "name": "mini-projects-platform",
+  "version": "1.0.0",
+  "description": "A small backend for a projects marketplace where clients post projects and freelancers apply",
+  "main": "server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest",
+    "prisma:migrate": "npx prisma migrate dev --name init",
+    "prisma:seed": "node prisma/seed.js",
+    "prisma:generate": "npx prisma generate"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/utuedey/mini-projects-platform.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/utuedey/mini-projects-platform/issues"
+  },
+  "homepage": "https://github.com/utuedey/mini-projects-platform#readme",
+  "dependencies": {
+    "@prisma/client": "^6.14.0",
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
+    "prisma": "^6.14.0"
+  },
+  "devDependencies": {
+    "jest": "^30.0.5",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.4"
+  }
+}
