@@ -2,6 +2,7 @@
 
 const express = require('express');
 const { PrismaClient } = require('../generated/prisma');
+const authRouter = require('./routes/auth.router');
 const dotenv = require('dotenv')
 
 dotenv.config();
@@ -13,6 +14,9 @@ const PORT = process.env.PORT || 8080;
 
 // Middlewares
 app.use(express.json())
+
+// App Routes
+app.use('/api/v1/auth', authRouter);
 
 // Basic route for testing
 app.get('/', (req, res) => {
