@@ -28,10 +28,9 @@ exports.login = catchAsync(async (req, res, next) => {
         return next(new AppError('Please provide email and password.', 400));
     }
 
-    const { token } = authService.loginUser(email, password);
+    const { token } = await authService.loginUser(email, password);
 
     res.status(200).json({
-        status: 'success',
         token,
     })
 });
