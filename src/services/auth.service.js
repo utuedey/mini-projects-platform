@@ -5,8 +5,8 @@ const AppError = require('../utils/AppError');
 
 const prisma = new PrismaClient({});
 
-const generateToken = (id) => {
-    return jwt.sign({id}, process.env.JWT_SECRET, {
+const generateToken = (id, role) => {
+    return jwt.sign({id, role}, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRES_IN
     });
 };
@@ -37,7 +37,7 @@ exports.registerUser = async (name, email, password, role)  => {
         },
     });
 
-    const token = generateToken(newUser.id)
+    const token = generateToken(newUser.id, newUser.role)
 
     // Return user data
     const { passwordHash, ...userWithoutPassword } = newUser;
@@ -53,18 +53,19 @@ exports.loginUser = async (email, password) =>{
     const user = await prisma.user.findUnique({ 
         where: { email: email }
     });
-    const confirmPassword = await bcrypt.compare(password, user.passwordHash)
 
-    if (!user || !confirmPassword) {
-        throw new AppError("Incorrect email or password.", 401)
+    if (!user) {
+        throw new AppError("Incorrect email or password.", 401);
     }
 
-    const token = generateToken(user.id)
+    const confirmPassword = await bcrypt.compare(password, user.passwordHash);
+    if (!confirmPassword) {
+        throw new AppError("Incorrect email or password.", 401);
+    }
+    
+    const token = generateToken(user.id, user.role);
 
-    // Return logged in user token
+    // Return user token
     return { token }
-
-
 }
-
 
