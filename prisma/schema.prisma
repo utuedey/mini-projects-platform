@@ -20,6 +20,12 @@ enum ProjectStatus {
   CLOSED
 }
 
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 model User {
   id              String @id @default(uuid())
   name            String
@@ -50,18 +56,20 @@ model Project {
 }
 
 model Application {
-  id              String @id @default(uuid())
-  projectId       String
-  project         Project @relation(fields: [projectId], references: [id])
-  freelancerId    String
-  freelancer      User @relation(fields: [freelancerId], references: [id])
-  coverLetter     String
-  bidAmount       Float
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String            @id @default(uuid())
+  coverLetter   String
+  bidAmount     Float?
+  status        ApplicationStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  
+  projectId     String
+  project       Project           @relation(fields: [projectId], references: [id])
+  
+  freelancerId  String
+  freelancer    User              @relation(fields: [freelancerId], references: [id])
 
-  @@unique([projectId, freelancerId])
-  @@index([projectId])
-  @@index([freelancerId])
+  // Unique constraint to prevent a freelancer from applying to the same project twice
+  @@unique([freelancerId, projectId])
   @@map("applications")
 }
