@@ -3,6 +3,7 @@ const projectController = require('../controllers/project.controller');
 const authMiddleware = require('../middleware/auth.middleware');
 const rbacMiddleware = require('../middleware/rbac.middleware');
 const { isProjectOwner } = require('../middleware/ownership.middleware');
+const applicationController = require('../controllers/application.controller');
 
 const router = express.Router();
 
@@ -24,5 +25,11 @@ router.delete('/:id', rbacMiddleware.restrictTo('CLIENT'), isProjectOwner, proje
 // Status transition routes
 router.post('/:id/open', rbacMiddleware.restrictTo('CLIENT'), isProjectOwner, projectController.openProject);
 router.post('/:id/close', rbacMiddleware.restrictTo('CLIENT', 'ADMIN'), projectController.closeProject);
+
+// POST /projects/:id/applications - FREELANCER can apply
+router.post('/:id/applications', rbacMiddleware.restrictTo('FREELANCER'), applicationController.createApplication);
+
+// GET /projects/:id/applications - CLIENT can list applications for their project
+router.get('/:id/applications', rbacMiddleware.restrictTo('CLIENT', 'ADMIN'), applicationController.getApplicationsByProject);
 
 module.exports = router;

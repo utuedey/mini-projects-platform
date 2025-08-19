@@ -5,6 +5,7 @@ const { PrismaClient } = require('../generated/prisma');
 const authRouter = require('./routes/auth.router');
 const userRouter = require('./routes/user.router');
 const projectRouter = require('./routes/project.router');
+const applicationRouter = require('./routes/application.router');
 const dotenv = require('dotenv');
 const cors = require('cors');
 
@@ -23,6 +24,7 @@ app.use(cors("*"));
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/projects', projectRouter);
+app.use('/api/v1/applications', applicationRouter);
 
 // Basic route for testing
 app.get('/', (req, res) => {
