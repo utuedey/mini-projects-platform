@@ -1,44 +1,27 @@
 #!/usr/bin/env node
-
-const express = require('express');
-const { PrismaClient } = require('../generated/prisma');
-const authRouter = require('./routes/auth.router');
-const userRouter = require('./routes/user.router');
-const projectRouter = require('./routes/project.router');
-const applicationRouter = require('./routes/application.router');
 const dotenv = require('dotenv');
-const cors = require('cors');
-
 dotenv.config();
 
-const app = express();
-const prisma = new PrismaClient();
+const { app, prisma } = require('./app');
 
 const PORT = process.env.PORT || 8080;
 
-// Middlewares
-app.use(express.json());
-app.use(cors("*"));
-
-// App Routes
-app.use('/api/v1/auth', authRouter);
-app.use('/api/v1/users', userRouter);
-app.use('/api/v1/projects', projectRouter);
-app.use('/api/v1/applications', applicationRouter);
-
-// Basic route for testing
-app.get('/', (req, res) => {
-    res.send('Mini Projects Platform Backend is running!');
-});
-
 const server = app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`)
+  console.log(`Server is running on port ${PORT}`);
 });
 
+// Graceful shutdown
+const shutdown = async (signal) => {
+  console.log(`\n${signal} received. Closing server...`);
+  await prisma.$disconnect();
+  server.close(() => {
+    console.log('Server closed. Prisma disconnected.');
+    process.exit(0);
+  });
+};
 
-// Gracful shutdown
-process.on('beforeExit', async () => {
-    await prisma.$disconnect();
-});
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 module.exports = server;
+

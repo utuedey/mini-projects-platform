@@ -1,0 +1,730 @@
+swagger: "2.0"
+info:
+  title: "Mini Projects Platform API"
+  version: "1.0.0"
+  description: "API for a mini projects marketplace where clients post projects and freelancers apply. This API documentation details all available endpoints, required parameters, and response formats."
+
+host: "localhost:8080"
+basePath: "/api/v1"
+schemes:
+  - "http"
+
+securityDefinitions:
+  Bearer:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+
+tags:
+  - name: "Auth"
+    description: "User authentication and registration"
+  - name: "Projects"
+    description: "Project management by clients and public viewing"
+  - name: "Applications"
+    description: "Application submission by freelancers and management by clients"
+  - name: "Users"
+    description: "User details"
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - "Auth"
+      summary: "Register a new user"
+      description: "Registers a new user with CLIENT, FREELANCER, or ADMIN roles."
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/RegisterRequest"
+      responses:
+        "201":
+          description: "User registered successfully"
+          schema:
+            $ref: "#/definitions/AuthResponse"
+        "400":
+          description: "Invalid input or validation error"
+        "409":
+          description: "Email already in use"
+        "500":
+          description: "Internal server error"
+
+  /auth/login:
+    post:
+      tags:
+        - "Auth"
+      summary: "Log in a user"
+      description: "Authenticates a user and returns a JWT token."
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/LoginRequest"
+      responses:
+        "200":
+          description: "User logged in successfully"
+          schema:
+            $ref: "#/definitions/AuthResponse"
+        "400":
+          description: "Invalid input"
+        "401":
+          description: "Incorrect email or password"
+        "500":
+          description: "Internal server error"
+
+  /users/me:
+    get:
+      tags:
+        - "Users"
+      summary: "Get current user details"
+      description: "Retrieves details of the currently authenticated user."
+      security:
+        - Bearer: []
+      produces:
+        - "application/json"
+      responses:
+        "200":
+          description: "User details retrieved successfully"
+          schema:
+            $ref: "#/definitions/UserResponse"
+        "401":
+          description: "Unauthorized"
+        "500":
+          description: "Internal server error"
+
+  /projects:
+    get:
+      tags:
+        - "Projects"
+      summary: "Get a list of public projects"
+      description: "Retrieves a paginated and filterable list of all projects with 'OPEN' status."
+      parameters:
+        - name: "status"
+          in: "query"
+          type: "string"
+          enum: ["OPEN", "CLOSED", "DRAFT"]
+          description: "Filter projects by status. Only OPEN is visible to the public."
+        - name: "budgetMin"
+          in: "query"
+          type: "number"
+          description: "Minimum budget for filtering."
+        - name: "budgetMax"
+          in: "query"
+          type: "number"
+          description: "Maximum budget for filtering."
+        - name: "search"
+          in: "query"
+          type: "string"
+          description: "Search by project title or description."
+        - name: "page"
+          in: "query"
+          type: "integer"
+          default: 1
+          description: "Page number for pagination."
+        - name: "pageSize"
+          in: "query"
+          type: "integer"
+          default: 10
+          description: "Number of projects per page."
+      produces:
+        - "application/json"
+      responses:
+        "200":
+          description: "A list of projects"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "string"
+                example: "success"
+              results:
+                type: "integer"
+              data:
+                type: "object"
+                properties:
+                  projects:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/Project"
+        "500":
+          description: "Internal server error"
+
+    post:
+      tags:
+        - "Projects"
+      summary: "Create a new project"
+      description: "Allows a CLIENT to create a new project. The initial status is DRAFT."
+      security:
+        - Bearer: []
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/CreateProjectRequest"
+      responses:
+        "201":
+          description: "Project created successfully"
+          schema:
+            $ref: "#/definitions/ProjectResponse"
+        "400":
+          description: "Invalid input"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden (only CLIENT role can create projects)"
+        "500":
+          description: "Internal server error"
+
+  /projects/{id}:
+    get:
+      tags:
+        - "Projects"
+      summary: "Get a single project by ID"
+      description: "Retrieves a single project by its unique ID."
+      produces:
+        - "application/json"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "string"
+          description: "The ID of the project to retrieve."
+      responses:
+        "200":
+          description: "Project details"
+          schema:
+            $ref: "#/definitions/ProjectResponse"
+        "404":
+          description: "Project not found"
+        "500":
+          description: "Internal server error"
+    
+    patch:
+      tags:
+        - "Projects"
+      summary: "Update a project"
+      description: "Allows the project owner (CLIENT) to update their project's details."
+      security:
+        - Bearer: []
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "string"
+          description: "The ID of the project to update."
+        - in: "body"
+          name: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/UpdateProjectRequest"
+      responses:
+        "200":
+          description: "Project updated successfully"
+          schema:
+            $ref: "#/definitions/ProjectResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden (only project owner can update)"
+        "404":
+          description: "Project not found"
+        "500":
+          description: "Internal server error"
+    
+    delete:
+      tags:
+        - "Projects"
+      summary: "Delete a project"
+      description: "Allows the project owner (CLIENT) to delete their project."
+      security:
+        - Bearer: []
+      produces:
+        - "application/json"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "string"
+          description: "The ID of the project to delete."
+      responses:
+        "204":
+          description: "Project deleted successfully (No Content)"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden (only project owner can delete)"
+        "404":
+          description: "Project not found"
+        "500":
+          description: "Internal server error"
+
+  /projects/{id}/open:
+    patch:
+      tags:
+        - "Projects"
+      summary: "Open a draft project"
+      description: "Changes a project's status from DRAFT to OPEN. Only the project owner can do this."
+      security:
+        - Bearer: []
+      produces:
+        - "application/json"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "string"
+          description: "The ID of the project to open."
+      responses:
+        "200":
+          description: "Project opened successfully"
+          schema:
+            $ref: "#/definitions/ProjectResponse"
+        "400":
+          description: "Project is not in DRAFT status"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden (only project owner can open)"
+        "404":
+          description: "Project not found"
+        "500":
+          description: "Internal server error"
+
+  /projects/{id}/close:
+    patch:
+      tags:
+        - "Projects"
+      summary: "Close an open project"
+      description: "Changes a project's status from OPEN to CLOSED. Only the project owner can do this."
+      security:
+        - Bearer: []
+      produces:
+        - "application/json"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "string"
+          description: "The ID of the project to close."
+      responses:
+        "200":
+          description: "Project closed successfully"
+          schema:
+            $ref: "#/definitions/ProjectResponse"
+        "400":
+          description: "Project is not in OPEN status"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden (only project owner can close)"
+        "404":
+          description: "Project not found"
+        "500":
+          description: "Internal server error"
+
+  /projects/{id}/applications:
+    post:
+      tags:
+        - "Applications"
+      summary: "Apply to a project"
+      description: "Allows a FREELANCER to submit an application to an OPEN project."
+      security:
+        - Bearer: []
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "string"
+          description: "The ID of the project to apply for."
+        - in: "body"
+          name: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/CreateApplicationRequest"
+      responses:
+        "201":
+          description: "Application submitted successfully"
+          schema:
+            $ref: "#/definitions/ApplicationResponse"
+        "400":
+          description: "Project is not open or freelancer has already applied"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden (only FREELANCER role can apply)"
+        "404":
+          description: "Project not found"
+        "500":
+          description: "Internal server error"
+    
+    get:
+      tags:
+        - "Applications"
+      summary: "Get applications for a specific project"
+      description: "Allows a project owner (CLIENT) or an ADMIN to view all applications for a project."
+      security:
+        - Bearer: []
+      produces:
+        - "application/json"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "string"
+          description: "The ID of the project."
+      responses:
+        "200":
+          description: "A list of applications for the project"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "string"
+                example: "success"
+              results:
+                type: "integer"
+              data:
+                type: "object"
+                properties:
+                  applications:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/Application"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden (only project owner or ADMIN can view)"
+        "404":
+          description: "Project not found"
+        "500":
+          description: "Internal server error"
+
+  /applications/me:
+    get:
+      tags:
+        - "Applications"
+      summary: "Get applications submitted by the current freelancer"
+      description: "Retrieves a list of all applications submitted by the authenticated FREELANCER."
+      security:
+        - Bearer: []
+      produces:
+        - "application/json"
+      responses:
+        "200":
+          description: "A list of applications submitted by the freelancer"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "string"
+                example: "success"
+              results:
+                type: "integer"
+              data:
+                type: "object"
+                properties:
+                  applications:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/Application"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden (only FREELANCER role can access)"
+        "500":
+          description: "Internal server error"
+
+  /applications/{id}/accept:
+    post:
+      tags:
+        - "Applications"
+      summary: "Accept an application"
+      description: "Allows the project owner (CLIENT) to accept a single application. This will also automatically close the project and reject all other applications for it."
+      security:
+        - Bearer: []
+      produces:
+        - "application/json"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "string"
+          description: "The ID of the application to accept."
+      responses:
+        "200":
+          description: "Application accepted successfully"
+          schema:
+            $ref: "#/definitions/ApplicationResponse"
+        "400":
+          description: "Project is not in OPEN status"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden (only project owner can accept)"
+        "404":
+          description: "Application not found"
+        "500":
+          description: "Internal server error"
+
+
+definitions:
+  UserRole:
+    type: "string"
+    enum: ["CLIENT", "FREELANCER", "ADMIN"]
+    description: "The role of the user."
+
+  ProjectStatus:
+    type: "string"
+    enum: ["DRAFT", "OPEN", "CLOSED"]
+    description: "The status of a project."
+
+  ApplicationStatus:
+    type: "string"
+    enum: ["PENDING", "ACCEPTED", "REJECTED"]
+    description: "The status of an application."
+
+  RegisterRequest:
+    type: "object"
+    required:
+      - "name"
+      - "email"
+      - "password"
+      - "role"
+    properties:
+      name:
+        type: "string"
+        minLength: 3
+        example: "John Doe"
+      email:
+        type: "string"
+        format: "email"
+        example: "john.doe@example.com"
+      password:
+        type: "string"
+        minLength: 8
+        example: "password123"
+      role:
+        $ref: "#/definitions/UserRole"
+        example: "FREELANCER"
+
+  LoginRequest:
+    type: "object"
+    required:
+      - "email"
+      - "password"
+    properties:
+      email:
+        type: "string"
+        format: "email"
+        example: "john.doe@example.com"
+      password:
+        type: "string"
+        example: "password123"
+
+  AuthResponse:
+    type: "object"
+    properties:
+      status:
+        type: "string"
+        example: "success"
+      message:
+        type: "string"
+        example: "User logged in successfully"
+      token:
+        type: "string"
+        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      data:
+        type: "object"
+        properties:
+          user:
+            $ref: "#/definitions/User"
+
+  User:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        example: "cll6f69n00000t8l8u6k4a9o"
+      name:
+        type: "string"
+        example: "John Doe"
+      email:
+        type: "string"
+        example: "john.doe@example.com"
+      role:
+        $ref: "#/definitions/UserRole"
+        example: "FREELANCER"
+      createdAt:
+        type: "string"
+        format: "date-time"
+      updatedAt:
+        type: "string"
+        format: "date-time"
+
+  UserResponse:
+    type: "object"
+    properties:
+      status:
+        type: "string"
+        example: "success"
+      data:
+        type: "object"
+        properties:
+          user:
+            $ref: "#/definitions/User"
+  
+  CreateProjectRequest:
+    type: "object"
+    required:
+      - "title"
+      - "description"
+      - "budget"
+    properties:
+      title:
+        type: "string"
+        example: "Build a modern React app"
+      description:
+        type: "string"
+        example: "Need a skilled developer to create a responsive web app with a backend API."
+      budget:
+        type: "number"
+        format: "float"
+        example: 5000.00
+  
+  UpdateProjectRequest:
+    type: "object"
+    properties:
+      title:
+        type: "string"
+        example: "Updated Project Title"
+      description:
+        type: "string"
+        example: "Updated description to reflect new requirements."
+      budget:
+        type: "number"
+        format: "float"
+        example: 6000.00
+
+  Project:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        example: "cll6g86n00000t8l8u6k4a9p"
+      title:
+        type: "string"
+        example: "Build a modern React app"
+      description:
+        type: "string"
+        example: "Need a skilled developer to create a responsive web app with a backend API."
+      budget:
+        type: "number"
+        format: "float"
+        example: 5000.00
+      status:
+        $ref: "#/definitions/ProjectStatus"
+        example: "OPEN"
+      ownerId:
+        type: "string"
+        example: "cll6f69n00000t8l8u6k4a9o"
+      createdAt:
+        type: "string"
+        format: "date-time"
+      updatedAt:
+        type: "string"
+        format: "date-time"
+      owner:
+        $ref: "#/definitions/User"
+
+  ProjectResponse:
+    type: "object"
+    properties:
+      status:
+        type: "string"
+        example: "success"
+      data:
+        type: "object"
+        properties:
+          project:
+            $ref: "#/definitions/Project"
+
+  CreateApplicationRequest:
+    type: "object"
+    required:
+      - "coverLetter"
+    properties:
+      coverLetter:
+        type: "string"
+        example: "I am an experienced developer with a strong background in web technologies. I would love to work on this project."
+      bidAmount:
+        type: "number"
+        format: "float"
+        example: 4500.00
+
+  Application:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        example: "cll6i92n00000t8l8u6k4a9q"
+      coverLetter:
+        type: "string"
+        example: "I am an experienced developer..."
+      bidAmount:
+        type: "number"
+        format: "float"
+        example: 4500.00
+      status:
+        $ref: "#/definitions/ApplicationStatus"
+        example: "PENDING"
+      freelancerId:
+        type: "string"
+        example: "cll6f69n00000t8l8u6k4a9r"
+      projectId:
+        type: "string"
+        example: "cll6g86n00000t8l8u6k4a9p"
+      createdAt:
+        type: "string"
+        format: "date-time"
+      updatedAt:
+        type: "string"
+        format: "date-time"
+      freelancer:
+        $ref: "#/definitions/User"
+      project:
+        $ref: "#/definitions/Project"
+
+  ApplicationResponse:
+    type: "object"
+    properties:
+      status:
+        type: "string"
+        example: "success"
+      data:
+        type: "object"
+        properties:
+          application:
+            $ref: "#/definitions/Application"
